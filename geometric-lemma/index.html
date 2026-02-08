@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Lemma Visualization (Bieri-Strebel 1.1)</title>
+
+    <!-- Libraries -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --accent-color: #4a90e2;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Visualization Area */
+        .viz-wrapper {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            width: 600px;
+            height: 600px;
+            transition: transform 0.2s;
+        }
+
+        .viz-header {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        canvas {
+            display: block;
+            outline: none;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            font-size: 0.9rem;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .mode-toggles {
+            display: flex;
+            background: #e9ecef;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: var(--accent-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Math Board */
+        .math-board {
+            background: #f8f9fa;
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            font-size: 0.9rem;
+        }
+
+        .math-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .math-val {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            background: #e3f2fd;
+            color: #0c5460;
+            font-size: 0.9rem;
+            border: 1px solid #bee5eb;
+            transition: background-color 0.3s;
+        }
+
+        .status-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .status-box.failure {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Geometric Lemma Visualization</h1>
+        <div class="subtitle">
+            Given a collection of finite sets \(\mathfrak{F}\) in \(\mathbf{R}^n\), do they "cover" the sphere well
+            enough to push points back into \(\mathbf{B}_\rho\)?
+        </div>
+    </header>
+
+    <div class="main-container">
+
+        <!-- Visualization Canvas -->
+        <div class="viz-wrapper">
+            <div id="viz-container" style="width:100%; height:100%;">
+                <!-- Canvases will be injected here -->
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-panel">
+
+            <!-- Mode Switcher -->
+            <div class="card">
+                <div class="control-group">
+                    <label>Scenario</label>
+                    <select id="scenario-select" onchange="changeScenario()">
+                        <option value="standard">Standard Coverage (3 Sets)</option>
+                        <option value="dense">Dense Coverage (Heavy overlap)</option>
+                        <option value="sparse">Sparse / Failure Case</option>
+                        <option value="boundary">Boundary Case (C ≈ 0)</option>
+                        <option value="random">Random Generation</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="card">
+                <div class="control-group">
+                    <label>Ball Radius (\(\rho\)): <span id="val-rho">200</span></label>
+                    <input type="range" id="slider-rho" min="50" max="400" value="200">
+                </div>
+
+                <div class="control-group">
+                    <label>Set Magnitude (Scale of \(L\)): <span id="val-mag">30</span></label>
+                    <input type="range" id="slider-mag" min="10" max="100" value="30">
+                </div>
+            </div>
+
+            <!-- Math & Theory -->
+            <div class="card math-board">
+                <div style="margin-bottom:10px; font-weight:600; border-bottom:1px solid #ddd; padding-bottom:5px;">
+                    Invariants</div>
+                <div class="math-row">
+                    <span>\(D = \max \lvert v \rvert\)</span>
+                    <span class="math-val" id="disp-D">--</span>
+                </div>
+                <div class="math-row">
+                    <span>\(C = \min_{u} \max_{L} \min_{v \in L} (-v \cdot u)\)</span>
+                    <span class="math-val" id="disp-C">--</span>
+                </div>
+                <div class="math-row">
+                    <span>\(\epsilon(\rho) = C - \frac{D^2}{2\rho}\)</span>
+                    <span class="math-val" id="disp-epsilon">--</span>
+                </div>
+                <div class="math-row" style="margin-top:10px; font-size:0.85rem; color:#666;">
+                    <span>Annulus \(B_{\rho+\epsilon} \setminus B_\rho\) exists if \(\epsilon > 0\)</span>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div id="status-box" class="status-box">
+                Move mouse over canvas to test points...
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Mathematical Context -->
+    <div class="card" style="margin-top: 20px; max-width: 1000px;">
+        <div class="viz-header">
+            <span>A geometric lemma</span>
+        </div>
+        <div style="padding: 15px; font-size: 0.95rem; line-height: 1.6; color: #333;">
+            <div <div
+                style="font-family: 'Times New Roman', Times, serif; font-size: 1.05rem; line-height: 1.5; color: #222;">
+                <p><strong>1. A geometric lemma</strong></p>
+                <p>1.1. In this preliminary section we establish a geometric lemma which will be needed in the proofs of
+                    two of our main results (cf. §§ 2.6 and 3.6).</p>
+                <p>1.2. Let \(\mathbf{R}^n\) be the euclidean vector space of all \(n\)-tuples over \(\mathbf{R}\) with
+                    the standard scalar product \(\langle \ , \ \rangle\). If \(\rho \in \mathbf{R}^+\) then
+                    \(\mathbf{B}_\rho\) denotes the <em>open</em> ball consisting of all vectors of length less than
+                    \(\rho\). We consider a <em>finite</em> collection \(\mathfrak{F}\) of <em>finite</em> subsets \(L
+                    \subset \mathbf{R}^n\). Let us say that an element \(x \in \mathbf{R}^n\) <em>can be taken from</em>
+                    \(\mathbf{B}_\rho\) <em>by</em> \(\mathfrak{F}\) if either \(x \in \mathbf{B}_\rho\) or if there is
+                    \(L \in \mathfrak{F}\) with</p>
+                <p style="text-align: center;">\(x + L = \{x+y \mid y \in L\} \subseteq \mathbf{B}_\rho\).</p>
+                <p>LEMMA 1.1. <em>Assume that for every \(0 \neq x \in \mathbf{R}^n\) there is \(L \in \mathfrak{F}\)
+                        such that \(\langle x, y \rangle > 0\) for all \(y \in L\). Then there exists a radius \(\rho_0
+                        \in \mathbf{R}^+\) and a function \(\varepsilon: \{\rho \in \mathbf{R} \mid \rho > \rho_0\} \to
+                        \mathbf{R}^+\) with the property that for \(\rho > \rho_0\) each element of \(\mathbf{B}_{\rho +
+                        \varepsilon(\rho)}\) can be taken from \(\mathbf{B}_\rho\) by \(\mathfrak{F}\).</em></p>
+                <p><em>Proof.</em> We define two auxiliary numbers \(C\) and \(D\) as follows. Let \(S^{n-1} \subset
+                    \mathbf{R}^n\) be the unit sphere and consider the function \(f: S^{n-1} \to \mathbf{R}\) given by
+                </p>
+                <p style="text-align: center;">\(f(u) = \max_{L \in \mathfrak{F}} \min_{y \in L} \langle u, y \rangle,
+                    \quad \text{for } u \in S^{n-1}\).</p>
+                <p>Since the function \(u \mapsto \langle u, y \rangle\) is continuous, \(f\) is continuous; moreover,
+                    by assumption \(f(u) > 0\) for all \(u \in S^{n-1}\). Since \(S^{n-1}\) is compact, \(f\) attains a
+                    minimum \(C > 0\). Let \(D\) be a real number such that \(\|y\| \le D\) for all \(y \in \bigcup_{L
+                    \in \mathfrak{F}} L\), so that \(L \subset \overline{\mathbf{B}}_D\) for every \(L \in
+                    \mathfrak{F}\). Now we claim that Lemma 1.1 holds with the following explicit choice of \(\rho_0\)
+                    and \(\varepsilon\):</p>
+                <p style="text-align: center;">(1.3) \(\quad \rho_0 = D^2/2C, \quad \varepsilon(\rho) = C -
+                    (D^2/2\rho)\).</p>
+                <p>Note that \(\varepsilon\) is positive and increasing on \(\{\rho \in \mathbf{R} \mid \rho >
+                    \rho_0\}\).<br>
+                    Let \(x \in \mathbf{R}^n\) be an element with \(\|x\| \ge \rho_0\). By the definition of \(C\) there
+                    is \(L = L_x \in \mathfrak{F}\) such that</p>
+                <p style="text-align: center;">\(\min_{y} \{ \langle -x/\|x\|, y \rangle \mid y \in L_x \} \ge C\),</p>
+                <p>or equivalently</p>
+                <p style="text-align: center;">\(\max_{y} \{ \langle x/\|x\|, y \rangle \mid y \in L_x \} \le -C\).</p>
+                <p>Therefore we have, for all \(y \in L_x\),</p>
+                <p style="text-align: center;">\(\|x+y\|^2 = \|x\|^2 + 2\langle x/\|x\|, y \rangle \|x\| + \|y\|^2 \le
+                    \|x\|^2 - 2C\|x\| + D^2 \le \|x\|^2\).</p>
+                <p>Moreover,</p>
+                <p style="text-align: center;">\(\|x+y\| - \|x\| = \frac{\|x+y\|^2 - \|x\|^2}{\|x+y\| + \|x\|} \le
+                    \frac{-2C\|x\| + D^2}{2\|x\|} = -\varepsilon(\|x\|)\).</p>
+                <p>If, in particular, \(x\) and \(\rho\) are such that \(\rho_0 < \rho \le \|x\| < \rho +
+                        \varepsilon(\rho)\) we get</p>
+                        <p style="text-align: center;">\(\|x+y\| < (\rho + \varepsilon(\rho)) - \varepsilon(\|x\|) \le
+                                \rho\), \(\quad\) for all \(y \in L_x\).</p>
+                                <p>Hence \(x + L_x \subseteq \mathbf{B}_\rho\). This shows that \(x\) can be taken from
+                                    \(\mathbf{B}_\rho\) by \(\mathfrak{F}\) and the proof of Lemma 1.1 is complete.</p>
+            </div>
+            <div style="margin-top: 20px; font-size: 0.9rem; border-top: 1px solid #ccc; padding-top: 10px;">
+                <p><strong>Reference:</strong></p>
+                <p><strong>MR0591649 (81j:20052)</strong><br>
+                    Bieri, Robert; Strebel, Ralph. Valuations and finitely presented metabelian groups.<br>
+                    <em>Proc. London Math. Soc. (3)</em> 41 (1980), no. 3, 439–464.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Logic -->
+    <script>
+        // --- Global State ---
+        const state = {
+            rho: 200,
+            magnitude: 30,
+            sets: [], // Array of { points: [{x,y}], color }
+            C: 0,
+            D: 0,
+            epsilon: 0,
+            mouseX: 0,
+            mouseY: 0, // Relative to center
+            isMouseOver: false
+        };
+
+        const config = {
+            colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'],
+            canvasSize: 600
+        };
+
+        // --- Math Engine ---
+
+        function getNorm(p) {
+            return Math.sqrt(p.x * p.x + p.y * p.y);
+        }
+
+        function dot(v1, v2) {
+            return v1.x * v2.x + v1.y * v2.y;
+        }
+
+        // Calculate D: Max norm of any vector in any set
+        function calculateD(sets) {
+            let maxDist = 0;
+            sets.forEach(set => {
+                set.points.forEach(p => {
+                    const d = getNorm(p);
+                    if (d > maxDist) maxDist = d;
+                });
+            });
+            return maxDist;
+        }
+
+        // Calculate C: The covering constant
+        // C = min_{u in S} max_{L in F} min_{v in L} (-v . u)
+        // We approximate "min_{u in S}" by sampling the sphere.
+        function calculateC(sets) {
+            let directions = [];
+            const numSamples = 360; // Higher sampling for accuracy
+
+            // Circle sampling
+            for (let i = 0; i < numSamples; i++) {
+                const theta = (i / numSamples) * 2 * Math.PI;
+                directions.push({ x: Math.cos(theta), y: Math.sin(theta) });
+            }
+
+            let C = Infinity; // We want the minimum over all directions
+
+            for (let u of directions) {
+                // For this direction u, find the "best" set L
+                // The "goodness" of a set L for direction u is min_{v in L} (-v . u)
+                // Wait, logic check: We need to pull BACK.
+                // If we are at x = R*u, we need a v such that x+v is inside.
+                // v should approximately be -u. 
+                // The projection should be positive if v opposes u.
+
+                let max_overFiles = -Infinity;
+
+                for (let set of sets) {
+                    // For a specific set L, what is its guaranteed push against u?
+                    // It is the weakest vector in the set: min_{v in L} (-v . u)
+                    let min_v_dot_u = Infinity;
+                    for (let v of set.points) {
+                        // We use -v dot u because v should be opposed to u
+                        const push = -dot(v, u);
+                        if (push < min_v_dot_u) min_v_dot_u = push;
+                    }
+                    if (min_v_dot_u > max_overFiles) max_overFiles = min_v_dot_u;
+                }
+
+                // The value for this direction is max_overFiles
+                if (max_overFiles < C) C = max_overFiles;
+            }
+
+            return C;
+        }
+
+        function updateInvariants() {
+            state.D = calculateD(state.sets);
+            state.C = calculateC(state.sets);
+
+            // epsilon = C - D^2 / 2rho
+            state.epsilon = state.C - (state.D * state.D) / (2 * state.rho);
+
+            // Update DOM
+            document.getElementById('disp-D').innerText = state.D.toFixed(1);
+            document.getElementById('disp-C').innerText = state.C.toFixed(1);
+
+            const epsElem = document.getElementById('disp-epsilon');
+            epsElem.innerText = state.epsilon.toFixed(1);
+            epsElem.style.color = state.epsilon > 0 ? "green" : "red";
+        }
+
+        // --- Data Generation ---
+
+        function generateData(type) {
+            state.sets = [];
+            const mag = state.magnitude;
+
+            if (type === 'standard' || type === 'boundary') {
+                // 3 sets at 120 degrees
+                const angles = [0, 2 * Math.PI / 3, 4 * Math.PI / 3];
+                angles.forEach((a, i) => {
+                    const ax = Math.cos(a);
+                    const ay = Math.sin(a);
+                    // To maximize C, vectors should point AGAINST the sector they cover.
+                    // If sector is around angle 0, we need vector pointing to PI.
+                    // So we generate vectors at angle + PI.
+                    const pushAngle = a + Math.PI;
+
+                    let points = [];
+                    // Main vector
+                    points.push({
+                        x: Math.cos(pushAngle) * mag,
+                        y: Math.sin(pushAngle) * mag
+                    });
+                    // Helper vectors for spread (vital for C > 0 stability)
+                    const spread = type === 'boundary' ? 0.05 : 0.4;
+                    points.push({
+                        x: Math.cos(pushAngle - spread) * mag * 0.9,
+                        y: Math.sin(pushAngle - spread) * mag * 0.9
+                    });
+                    points.push({
+                        x: Math.cos(pushAngle + spread) * mag * 0.9,
+                        y: Math.sin(pushAngle + spread) * mag * 0.9
+                    });
+
+                    state.sets.push({ points, color: config.colors[i] });
+                });
+            }
+            else if (type === 'dense') {
+                // 6 sets, overlapping
+                for (let i = 0; i < 6; i++) {
+                    const a = (i / 6) * 2 * Math.PI;
+                    const pushAngle = a + Math.PI;
+                    let points = [];
+                    points.push({ x: Math.cos(pushAngle) * mag, y: Math.sin(pushAngle) * mag });
+                    points.push({ x: Math.cos(pushAngle - 0.2) * mag, y: Math.sin(pushAngle - 0.2) * mag });
+                    state.sets.push({ points, color: config.colors[i % config.colors.length] });
+                };
+            }
+            else if (type === 'sparse') {
+                // 2 sets only - Impossible to cover circle (need minimum 3 usually for positive basis)
+                // Actually 2 sets at 180 deg can cover line, but not circle reliably if spread is small
+                const angles = [0, Math.PI / 2]; // 90 deg gap leaving 270 deg uncovered
+                angles.forEach((a, i) => {
+                    const pushAngle = a + Math.PI;
+                    let points = [{ x: Math.cos(pushAngle) * mag, y: Math.sin(pushAngle) * mag }];
+                    state.sets.push({ points, color: config.colors[i] });
+                });
+            }
+            else if (type === 'random') {
+                const numSets = 4 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < numSets; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    let points = [];
+                    const numPoints = 1 + Math.floor(Math.random() * 3);
+                    for (let j = 0; j < numPoints; j++) {
+                        const localA = angle + (Math.random() - 0.5) * 0.5;
+                        const localMag = mag * (0.8 + Math.random() * 0.4);
+                        points.push({
+                            x: Math.cos(localA) * localMag,
+                            y: Math.sin(localA) * localMag
+                        });
+                    }
+                    state.sets.push({ points, color: config.colors[i % config.colors.length] });
+                }
+            }
+        }
+
+
+        // --- 2D Visualization (Canvas) ---
+        let ctx;
+        function init2D() {
+            const container = document.getElementById('viz-container');
+            container.innerHTML = `<canvas id="simCanvas" width="${config.canvasSize}" height="${config.canvasSize}"></canvas>`;
+            const canvas = document.getElementById('simCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Mouse handling
+            const rect = canvas.getBoundingClientRect();
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                state.mouseX = e.clientX - rect.left - config.canvasSize / 2;
+                state.mouseY = e.clientY - rect.top - config.canvasSize / 2;
+                state.isMouseOver = true;
+                requestAnimationFrame(draw2D);
+                updateStatus2D();
+            });
+            canvas.addEventListener('mouseleave', () => {
+                state.isMouseOver = false;
+                requestAnimationFrame(draw2D);
+            });
+        }
+
+        function draw2D() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, config.canvasSize, config.canvasSize);
+            const cx = config.canvasSize / 2;
+            const cy = config.canvasSize / 2;
+
+            // 1. Draw Annulus B_{rho+eps} (Background)
+            if (state.epsilon > 0) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, state.rho + state.epsilon, 0, 2 * Math.PI);
+                ctx.arc(cx, cy, state.rho, 0, 2 * Math.PI, true); // hole
+                ctx.fillStyle = 'rgba(76, 175, 80, 0.15)'; // Light green annulus
+                ctx.fill();
+
+                // Outer dashed line
+                ctx.beginPath();
+                ctx.arc(cx, cy, state.rho + state.epsilon, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#2E7D32'; // Darker green
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Label
+                ctx.fillStyle = '#1B5E20';
+                ctx.font = '12px "Inter", sans-serif';
+                ctx.fillText("Annulus region", cx, cy - (state.rho + state.epsilon) - 5);
+            } else {
+                // Hint if not visible
+                ctx.fillStyle = '#999';
+                ctx.font = 'italic 12px "Inter", sans-serif';
+                ctx.fillText("Increase \u03C1 or reduce L to see annulus", cx, cy - state.rho - 20);
+            }
+
+            // 2. Draw Ball B_rho
+            ctx.beginPath();
+            ctx.arc(cx, cy, state.rho, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(74, 144, 226, 0.2)'; // 0.2 opacity
+            ctx.fill();
+            ctx.strokeStyle = '#4a90e2';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 2. Draw Sets (Default view)
+            state.sets.forEach(set => {
+                set.points.forEach(p => {
+                    // Line
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + p.x, cy + p.y);
+                    ctx.strokeStyle = set.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.6;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+
+                    // Point
+                    ctx.beginPath();
+                    ctx.arc(cx + p.x, cy + p.y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = set.color;
+                    ctx.fill();
+                });
+            });
+
+            // 3. User Interaction Point
+            if (state.isMouseOver) {
+                const dist = Math.sqrt(state.mouseX ** 2 + state.mouseY ** 2);
+
+                // Draw X
+                ctx.beginPath();
+                ctx.arc(cx + state.mouseX, cy + state.mouseY, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#333';
+                ctx.fill();
+                ctx.fillText("x", cx + state.mouseX + 8, cy + state.mouseY - 8);
+
+                if (dist < state.rho) {
+                    // Inside - nothing special
+                } else {
+                    // Outside: Find the "best" L
+                    let bestSet = null;
+                    let bestSetIndex = -1;
+
+                    state.sets.forEach((set, idx) => {
+                        // Check if x + L \subset B_rho
+                        let allInside = true;
+                        set.points.forEach(p => {
+                            const tx = state.mouseX + p.x;
+                            const ty = state.mouseY + p.y;
+                            if (getNorm({ x: tx, y: ty }) >= state.rho) allInside = false;
+                        });
+
+                        // We prefer a winning set. If multiple win, pick first.
+                        if (allInside && bestSetIndex === -1) {
+                            bestSet = set;
+                            bestSetIndex = idx;
+                        }
+                    });
+
+                    // Visualize the calculation
+                    state.sets.forEach((set, idx) => {
+                        const isSuccess = (bestSetIndex !== -1 && idx === bestSetIndex);
+
+                        // If we have a winner, only show the winner. 
+                        // If no winner, show all as failed (red).
+                        if (bestSetIndex !== -1 && !isSuccess) return;
+
+                        set.points.forEach(p => {
+                            const tx = cx + state.mouseX + p.x;
+                            const ty = cy + state.mouseY + p.y;
+
+                            ctx.beginPath();
+                            ctx.arc(tx, ty, 3, 0, 2 * Math.PI);
+                            if (isSuccess) ctx.fillStyle = '#28a745';
+                            else ctx.fillStyle = 'rgba(220, 53, 69, 0.4)';
+                            ctx.fill();
+
+                            // Line from x to point
+                            ctx.beginPath();
+                            ctx.moveTo(cx + state.mouseX, cy + state.mouseY);
+                            ctx.lineTo(tx, ty);
+                            ctx.strokeStyle = isSuccess ? 'rgba(40, 167, 69, 0.4)' : 'rgba(220, 53, 69, 0.1)';
+                            ctx.stroke();
+                        });
+                    });
+                }
+            } else {
+                // Call to action
+                ctx.fillStyle = '#666';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText("Hover mouse here to test points", cx, cy + state.rho + 40);
+            }
+        }
+
+        function updateStatus2D() {
+            const dist = getNorm({ x: state.mouseX, y: state.mouseY });
+            const statusBox = document.getElementById('status-box');
+
+            if (dist < state.rho) {
+                statusBox.className = "status-box success";
+                statusBox.innerHTML = "<strong>Inside \(B_\\rho\)</strong><br>Point is already safe.";
+            } else {
+                let found = false;
+                state.sets.forEach(set => {
+                    if (set.points.every(p => getNorm({ x: state.mouseX + p.x, y: state.mouseY + p.y }) < state.rho)) found = true;
+                });
+
+                if (found) {
+                    statusBox.className = "status-box success";
+                    statusBox.innerHTML = `<strong>Success</strong><br>Found set \\(L\\) such that \\(x+L \\subset B_\\rho\\).`;
+                } else {
+                    statusBox.className = "status-box failure";
+                    statusBox.innerHTML = `<strong>Failure</strong><br>No set \\(L\\) can pull \\(x\\) back into \\(B_\\rho\\).<br>Try increasing \\(\\rho\\) or optimizing sets.`;
+                }
+            }
+            // Retrigger mathjax
+            if (window.MathJax) {
+                MathJax.typesetPromise([statusBox]);
+            }
+        }
+
+        // --- Controller Logic ---
+
+        function changeScenario() {
+            const type = document.getElementById('scenario-select').value;
+            generateData(type);
+            updateInvariants();
+
+            requestAnimationFrame(draw2D);
+        }
+
+        document.getElementById('slider-rho').addEventListener('input', (e) => {
+            state.rho = parseInt(e.target.value);
+            document.getElementById('val-rho').innerText = state.rho;
+            updateInvariants();
+            requestAnimationFrame(draw2D);
+        });
+
+        document.getElementById('slider-mag').addEventListener('input', (e) => {
+            state.magnitude = parseInt(e.target.value);
+            document.getElementById('val-mag').innerText = state.magnitude;
+            changeScenario(); // Regenerate sets with new magnitude
+        });
+
+        // Initialize
+        document.getElementById('scenario-select').value = 'dense';
+        generateData('dense');
+        updateInvariants();
+        init2D();
+        draw2D(); // Explicit draw on load
+
+    </script>
+</body>
+
+</html>
